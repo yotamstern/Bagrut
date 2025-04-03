@@ -21,6 +21,10 @@ CHANNELS = 1
 RATE = 16000
 CHUNK = 1024
 
+p = pyaudio.PyAudio()
+default_device_index = p.get_default_input_device_info()
+print(f"Current microphone: {default_device_index['name']}")
+
 
 def send_video(client_socket):
     cap = cv2.VideoCapture(0)
@@ -57,17 +61,13 @@ def send_audio(client_socket):
         try:
             data = stream.read(CHUNK)
             packed_data = pickle.dumps((timestamp, data))  # Send timestamp + audio
-            size = struct.pack("Q", len(packed_data))
+            logging.info("Trying to send")
+            size = struct.pack("I", len(packed_data))
             client_socket.sendall(size + packed_data)
             logging.info(f"[CLIENT] Sent audio packet of size {len(packed_data)} at timestamp {timestamp}")
         except Exception as e:
             logging.error(f"[CLIENT] Audio send error: {e}")
             break
-
-    stream.stop_stream()
-    stream.close()
-    audio.terminate()
-    client_socket.close()
 
 
 def start_client(host='127.0.0.1', video_port=12345, audio_port=12346):
@@ -91,3 +91,4 @@ def start_client(host='127.0.0.1', video_port=12345, audio_port=12346):
 
 if __name__ == "__main__":
     start_client()
+
